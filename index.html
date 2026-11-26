@@ -878,7 +878,7 @@ const ROOFS=['#ff8a8a','#7ab8ff','#ffb35a','#b89aff'];
 
 // ===================== セーブ =====================
 let SLOT=1;const SKOF=n=>'yupi-save-'+n;
-function newS(){return {map:'machi',x:4,y:12,friends:{},coins:0,items:{candy:1},dress:'pink',dresses:{pink:1},fuku:'kiiro',found:{},seals:{},talkOk:0,manabiSeen:0,henSeen:0,hanaSeen:0,gateMsg:0,owlMsg:0,yasashi:1,end:0,shopSeen:0,lv:1,exp:0}}
+function newS(){return {map:'machi',x:4,y:12,friends:{},coins:0,items:{candy:1},dress:'pink',dresses:{pink:1},fuku:'kiiro',found:{},seals:{},talkOk:0,manabiSeen:0,henSeen:0,hanaSeen:0,gateMsg:0,owlMsg:0,yasashi:1,dm:{day:'',lv:2,days:0,good:0},end:0,shopSeen:0,lv:1,exp:0}}
 function save(){try{localStorage.setItem(SKOF(SLOT),JSON.stringify(S))}catch(e){}}
 function load(n){try{const s=localStorage.getItem(SKOF(n||SLOT));if(!s)return null;const o=JSON.parse(s);const r=Object.assign(newS(),o);if(o.yasashi===undefined)r.yasashi=0;
  if(o.lv===undefined){r.lv=1;r.exp=0;let e=0;Object.keys(r.friends).forEach(f=>{if(EN[f])e+=expOf(f)});addExp(r,e)}
@@ -1002,12 +1002,40 @@ function slotTap(x,y){
   if(inR(x,y,SLOTR(i))){sfx.tap();SLOT=n;try{localStorage.setItem('yupi-slot',String(n))}catch(e){}
    if(info){S=load(n)||newS();startMap();run(news)}else{S=newS();save();run(opening)}return}}
 }
-async function news(){await sleep(300);
+async function news(){await sleep(300);await newsMsgs();await dailyAsk()}
+async function newsMsgs(){
  if(!S.yasashi){S.yasashi=1;save();if(Object.keys(S.friends).length){await say('ペンちゃん','ユーピー、 ペンちゃん かんがえたペン。 こおった こを たたいたら、 もっと こころを とじちゃうペン。');await say('ペンちゃん','これからは パンチじゃ なくて、 ことばと ぬくもりで とかすペン！ ペンちゃんも もう ぶつからないペン。');await say('ペンちゃん','どんな こえを かけたら いいか、 「ペンちゃん」を おして いつでも きいてペン！')}}
  if(S.lv>1&&!S.lvSeen){S.lvSeen=1;save();await say('ペンちゃん','ユーピー、 みんなを たすけて つよく なってたペン！ いまは レベル '+S.lv+' だペン！');await say('ペンちゃん','レベルが あがると ハートが ふえたり、 パワーが あがったり するペン！')}
  if(S.end2&&!S.ch3Msg){S.ch3Msg=1;save();await say('ペンちゃん','あれ…？ はなの もりの ひだりの ほうから、 まだ つめたい かぜが ふいてくるペン。');await say('ペンちゃん','もりの もっと おくに、 カチコチの こが いるかも！ いって みるペン！')}
  if(S.end4&&!S.ch5Msg){S.ch5Msg=1;save();await say('ペンちゃん','みて！ にじの しまの ひだりに、 うみへ つづく みちが できたペン！');await say('ペンちゃん','うみにも カチコチの こが いるかも！ いって みるペン！')}
  if(S.end3&&!S.ch4Msg){S.ch4Msg=1;save();await say('ペンちゃん','みて！ ほしの おかの うえに にじの はしが かかったペン！');await say('ペンちゃん','にじを わたると そらの うえに いけるペン！ そらにも カチコチの こが いるかも！')}}
+// ===================== きょうの 1もん（さんすう・1にち 1かい）=====================
+function dayKey(off){const d=new Date();d.setDate(d.getDate()+(off||0));return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+const DNAME=['ミルク','クルミ','ポテ','メェメ','モフ','スノ','ルナ','ピピ','ケロ','チュリ','コン','ナナ'];
+function dailyGen(lv){const nm=pick(DNAME);let nm2=pick(DNAME);while(nm2===nm)nm2=pick(DNAME);
+ const T=[];
+ const add=(a,b,it,u)=>T.push({q:nm+'は '+it+'を '+a+u+' もってるよ。 '+b+u+' もらったら、 ぜんぶで なん'+u+'？',a:a+b,u,h:'ふえる ときは たしざんペン！ '+a+' たす '+b+' ペン。'});
+ const sub=(a,b,it,u)=>T.push({q:nm+'は '+it+'を '+a+u+' もってたよ。 '+b+u+' たべたら、 のこりは なん'+u+'？',a:a-b,u,h:'へる ときは ひきざんペン！ '+a+' ひく '+b+' ペン。'});
+ const miss=(a,c)=>T.push({q:nm+'は キラキラを '+a+'こ あつめたよ。 あと なんこで '+c+'こに なる？',a:c-a,u:'こ',h:a+' から '+c+' まで、 ゆびで かぞえて みるペン！'});
+ const diff=(a,b)=>T.push({q:nm+'は どんぐりを '+a+'こ、 '+nm2+'は '+b+'こ ひろったよ。 ちがいは なんこ？',a:a-b,u:'こ',h:'おおい ほうから すくない ほうを ひくペン！ '+a+' ひく '+b+' ペン。'});
+ if(lv===1){const a=rnd(2,6),b=rnd(1,10-a);add(a,b,pick(['どんぐり','いちご']),'こ');const c=rnd(5,10),d=rnd(1,c-1);sub(c,d,pick(['クッキー','せんべい']),'まい');const e=rnd(2,7);miss(e,rnd(e+1,10))}
+ else if(lv===2){const a=rnd(4,9),b=rnd(11-a,9);add(a,b,pick(['どんぐり','いちご','あめ']),'こ');const c=rnd(11,17),d=rnd(c-9,9);sub(c,d,pick(['クッキー','せんべい']),'まい');const e=rnd(5,9);miss(e,rnd(11,e+9));const f=rnd(11,18),g2=rnd(f-9,9);diff(f,g2)}
+ else{const a=rnd(12,45),b=rnd(5,30);add(a,b,pick(['どんぐり','シール']),'こ');const c=rnd(30,80),d=rnd(6,c-12);sub(c,d,pick(['クッキー','せんべい']),'まい');const e=rnd(15,60);miss(e,e+rnd(8,35));const f=rnd(25,90),g2=rnd(8,f-6);diff(f,g2);
+  const x=rnd(6,14),y=rnd(2,6),z=rnd(1,5);T.push({q:'バスに '+x+'にん のってるよ。 '+y+'にん のって、 '+z+'にん おりたよ。 いま なんにん？',a:x+y-z,u:'にん',h:'のったら たして、 おりたら ひくペン！ じゅんばんに やるペン。'})}
+ return pick(T)}
+async function dailyAsk(){if(!S.henSeen||!S.dm||S.dm.day===dayKey())return;await say('ペンちゃん','ユーピー、 きょうの 1もん あるペン！ さんすうだペン。');const c=await choose([{t:'やる！'},{t:'あとで'}]);if(c===0)await dailyQ();else await say('ペンちゃん','した の 「ペンちゃん」を おしたら いつでも できるペン！')}
+async function dailyQ(){const D=S.dm;const p=dailyGen(D.lv);
+ await say('ペンちゃん','きょうの 1もん！ （'+['','★','★★','★★★'][D.lv]+'）');
+ const opts=shuffle(numOpts(p.a,0,99).map(v=>v+' '+p.u));const right=p.a+' '+p.u;let tries=0;let left=opts.slice();
+ while(true){await say('ペンちゃん',p.q);const c=await choose(left.map(t=>({t,col:'#6aaeff'})),'list');tries++;
+  if(left[c]===right)break;sfx.no();await say('ペンちゃん','おしい！ '+p.h);left=left.filter((_,i)=>i!==c)}
+ sfx.kira();const yest=D.day===dayKey(-1);D.days=yest?(D.days||0)+1:1;D.day=dayKey();
+ if(tries===1){D.bad=0;D.good=(D.good||0)+1;if(D.good>=2&&D.lv<3){D.lv++;D.good=0;D.up=1}}else{D.good=0;D.bad=(D.bad||0)+1;if(D.bad>=2&&D.lv>1){D.lv--;D.bad=0}}
+ const coin=tries===1?10:5;S.coins+=coin;gainExp(2);save();
+ await say('ペンちゃん',(tries===1?'せいかい！ すごいペン！':'せいかい！ さいごまで がんばったペン！')+' '+coin+' コイン どうぞペン！');
+ await say('ペンちゃん','きょうで '+D.days+'にち つづいたペン！'+(D.days>=3?' すごい つづいてるペン！':''));
+ if(D.up){D.up=0;save();await say('ペンちゃん','あしたからは もう すこし むずかしく するペン！')}
+ await say('ペンちゃん','また あした あそぼうペン！')}
 async function run(fn){busy=true;try{await fn()}finally{busy=false}}
 
 // ===================== はじまりの おはなし =====================
@@ -1057,6 +1085,7 @@ function mapTap2(tx,ty){
  else if('THWI#KCO'.includes(ch)){const p=bfs(adjGoal(tx,ty));if(p){P.path=p;P.talk={look:ch}}}
 }
 async function penHint(){
+ if(S.henSeen&&S.dm&&S.dm.day!==dayKey()){await say('ペンちゃん','まだ きょうの 1もん、 やってないペン！ やる？');const c=await choose([{t:'やる！'},{t:'あとで'}]);if(c===0){await dailyQ();return}}
  if(S.map==='manabi'){await say('ペンちゃん','せんせいに はなしかけて もんだいに ちょうせん するペン！ 3もん つづけて せいかいで シールが もらえるペン！');return}
  const mw=warmOf('machi'),hw=warmOf('hana');let t;
  const NEXT={mizuumi:'きたの みちから おしろへ いくペン！',oshiro:'おくの フロルに あいに いくペン！',fukamori:'きたの みちから きのこの もりへ いくペン！',kinoko:'きたの みちから ほしの おかへ いくペン！',oka:S.end3?'おかの うえの にじの はしから そらへ いけるペン！':'おかの うえの ステラに あいに いくペン！',kumo:'きたの みちから そらの にわへ いくペン！',sora:'きたの みちから にじの しまへ いくペン！',niji:S.end4?'にじの しまの ひだりの みちから うみへ いけるペン！':'おくの セレナに あいに いくペン！',hama:'きたの みちから うみの なかへ いくペン！',umi:'きたの みちから しんかいへ いくペン！',shinkai:'おくの マリンに あいに いくペン！'};
@@ -1731,7 +1760,7 @@ function drawTitle(t){const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0
  g.globalAlpha=0.6;ell(180,470,260,60,'#ffffff');g.globalAlpha=1;drawSnow(0.9);
  for(let i=0;i<7;i++){const a=t/1500+i*0.9;star(180+Math.cos(a)*150,120+Math.sin(a*1.3)*40,4+(i%3)*2,i%2?'#ffffff':'#ffd84a',a)}
  text('ユーピーの',180,92,32,'#ffffff','center','#ff6fa8');text('ぼうけん',180,146,50,'#ff4f97','center','#ffffff');
- text('おためし その5',180,196,15,'#7a6aa8');text(isNet?'ネットの ばん 11がつ26にち':'おうちの ばん 11がつ26にち',180,622,11,'#a898b8');
+ text('おためし その5',180,196,15,'#7a6aa8');text(isNet?'ネットの ばん 11がつ26にち・2':'おうちの ばん 11がつ26にち・2',180,622,11,'#a898b8');
  ent(drawYupi,140,430,3.2,{hen:1,mood:'happy',t,dress:'pink'});ent(drawPen,250,440,3.4,{mood:'happy'});
  rrf(70,462,220,56,28,'#ff6fa8');text('あそぶ',180,490,24,'#ffffff');
 }
