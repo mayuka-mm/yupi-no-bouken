@@ -1166,7 +1166,8 @@ async function enaTalk(){const nm='シマエナガの エナ';
 async function quizTalk(id){const s=STAT[id];
  if(!S.quizSeen){S.quizSeen=1;save();await say(s.name,'ようこそ、 がっこうの にわへ！ せいかい すると コインが もらえるよ。');await say(s.name,'3もん つづけて せいかい すると、 シールが もらえるよ！ 「もちもの」の シールちょうに はってね。')}
  else await say(s.name,s.label+'の もんだい、 どれに する？');
- const c=await choose(QLV.map((l,i)=>({t:'★'.repeat(i+1)+' '+l[0],col:l[1]})).concat([{t:'やめる',col:'#b8b0c8'}]),'list');if(c===3)return;
+ const tomo=id==='nazo';const c=await choose(QLV.map((l,i)=>({t:'★'.repeat(i+1)+' '+l[0],col:l[1]})).concat(tomo?[{t:'ともだちに だす なぞなぞ',col:'#ff9a5a'}]:[],[{t:'やめる',col:'#b8b0c8'}]),'list');
+ if(tomo&&c===3){if(!S.tomoSeen){S.tomoSeen=1;save();await say(s.name,'がっこうで ともだちに なぞなぞを だして みよう！ こたえは ボタンを おすまで かくれてるよ。')}openTomo();return}if(c===(tomo?4:3))return;
  S.qlv=S.qlv||{};S.qlv[id]=c+1;save();openQuiz(id,c+1)}
 async function changeMap(id,x,y){busy=true;UI.fade=now();S.map=id;S.x=x;S.y=y;P.x=x;P.y=y;P.path=[];P.talk=null;P.pen={x,y};P.penT={x,y};P.last={x,y};save();
  if(id==='hana'&&!S.hanaSeen){S.hanaSeen=1;save();await sleep(400);await say('ペンちゃん','ここは はなの もり。 ここも カチコチだペン…')}
@@ -1218,6 +1219,7 @@ function drawArena(t){const L=arenaList();text('できた かず '+(S.arenaWins|
 function openMenu(m){menuMode=m;sfx.tap()}
 let zPage=0,bagTab='dress';const TAB_D=[14,300,160,28],TAB_F=[180,300,166,28];const BAGSLOT=[112,16,128,34];const ZPREV=[14,586,76,44],ZNEXT=[270,586,76,44];const CLOSE_TOP=[250,14,98,40],CLOSE_BOT=[100,586,160,44],SEALBTN=[180,58,166,26];
 function menuTap(x,y){
+ if(menuMode==='tomo'){tomoTap(x,y);return}
  if(menuMode==='quiz'){if(inR(x,y,CLOSE_TOP)){sfx.tap();menuMode=null;Q=null;return}quizTap(x,y);return}
  if(menuMode==='seal'&&(inR(x,y,CLOSE_TOP)||inR(x,y,CLOSE_BOT))){sfx.tap();menuMode='bag';return}
  if(inR(x,y,CLOSE_TOP)||inR(x,y,CLOSE_BOT)){sfx.tap();menuMode=null;return}
@@ -1370,6 +1372,35 @@ function hardKakijun(lv){if(lv===3&&Math.random()<0.3)return genKakijun();
  return {q:'「'+k+'」は なんかくで かく？',ans:[...o].map(v=>v+' かく'),big:k}}
 const QHARD={math:hardMath,kotoba:hardKotoba,tokei:hardTokei,nazo:hardNazo,kanji:hardKanji,kakijun:hardKakijun};
 const QLV=[['ふつう','#7acb6a'],['むずかしい','#ffa83a'],['ちょうせん','#e8584a']];
+// ===== ともだちに だす なぞなぞ（こたえは おすまで かくれる）=====
+const TOMO=[['パンは パンでも たべられない パンは？','フライパン','だいどころで つかう どうぐ'],['とりは とりでも そらを とばない とりは？','ちりとり','そうじの どうぐ'],['はしは はしでも わたれない はしは？','おはし','ごはんの ときに つかうよ'],['いすは いすでも すわれない いすは？','アイス','つめたくて あまい'],
+ ['トラは トラでも はしる トラは？','トラック','にもつを はこぶ のりもの'],['カメは カメでも しゃしんを とる カメは？','カメラ','パシャッ！'],['サラは サラでも たべられる サラは？','サラダ','やさいが いっぱい'],['きは きでも そらを とぶ きは？','ひこうき','ブーン'],
+ ['かんは かんでも のれる かんは？','しんかんせん','とっても はやい でんしゃ'],['かきは かきでも たべられない かきは？','らくがき','かべに かいたら おこられちゃう'],['ほんは ほんでも よめない ほんは？','ほんだな','ほんを しまう ところ'],['さかなは さかなでも そらを およぐ さかなは？','こいのぼり','こどもの ひに あがるよ'],
+ ['たいは たいでも ゆびに まく たいは？','ほうたい','けがを したら まくよ'],['かばんの なかに かくれている どうぶつは？','かば','「かばん」を ゆっくり いって みて'],['ありがとうの なかに かくれている むしは？','あり','「ありがとう」の はじめの ほう'],['たいこの なかに かくれている さかなは？','たい','「たいこ」の はじめの ほう'],
+ ['しかくの なかに かくれている どうぶつは？','しか','つのが ある どうぶつ'],['さかさまに いうと 「かるい」に なる どうぶつは？','イルカ','うみに いるよ'],['さかさまに いうと 「なす」に なる ものは？','すな','こうえんの すなばに ある'],['うえから よんでも したから よんでも おなじ やさいは？','トマト','あかい やさい'],
+ ['うえから よんでも したから よんでも おなじ なまえの とりは？','きつつき','きを コツコツ つつく'],['みぎてで さわれるのに、 ひだりてでは さわれない ところは？','ひだりての ひじ','ほんとうに さわって みてね！'],['つかえば つかうほど ちいさく なる ぶんぼうぐは？','けしゴム','まちがえたら つかう'],['はが たくさん あるのに なにも かまない ものは？','くし','かみの けを とかす'],
+ ['あしが 4ほん あるのに あるけない ものは？','つくえ（いすも せいかい）','きょうしつに いっぱい ある'],['かおは あるのに めも はなも ない。 じかんを おしえて くれる ものは？','とけい','はりが うごくよ'],['いつも くちを あけて、 てがみを たべる ものは？','ポスト','まちに ある あかい はこ'],['「くるま」から 「る」を とると なにに なる？','くま','もりに いる おおきな どうぶつ'],
+ ['「あいうえお」の まんなかの もじは？','う','ゆびで かぞえて みて'],['みんな もっていて、 じぶんより ほかの ひとが よく つかう ものは？','なまえ','よばれる ときに つかうよ'],['ねる ときに みる、 めには みえない おはなしは？','ゆめ','ねむって いる あいだ'],['うえから よんでも したから よんでも おなじ よみものは？','しんぶんし','まいあさ いえに とどく']];
+let TM=null;const TM_HINT=[20,428,155,52],TM_ANS=[185,428,155,52],TM_NEXT=[20,494,320,56],TM_PREV=[20,566,100,48],TM_RND=[130,566,210,48];
+function openTomo(){TM={i:Math.floor(Math.random()*TOMO.length),hint:false,ans:false};menuMode='tomo'}
+function tomoGo(i){TM.i=(i+TOMO.length)%TOMO.length;TM.hint=false;TM.ans=false}
+function tomoTap(x,y){if(inR(x,y,CLOSE_TOP)){sfx.tap();menuMode=null;TM=null;return}
+ if(inR(x,y,TM_HINT)){sfx.tap();TM.hint=true;return}if(inR(x,y,TM_ANS)){sfx.kira();TM.ans=true;return}
+ if(inR(x,y,TM_NEXT)){sfx.tap();tomoGo(TM.i+1);return}if(inR(x,y,TM_PREV)){sfx.tap();tomoGo(TM.i-1);return}if(inR(x,y,TM_RND)){sfx.tap();let j=TM.i;while(j===TM.i)j=Math.floor(Math.random()*TOMO.length);tomoGo(j)}}
+function drawTomo(t){const n=TOMO[TM.i];g.fillStyle='#fff6ea';g.fillRect(0,0,W,H);
+ text('ともだちに だす なぞなぞ',18,34,18,'#ff4f97','left');rrf(CLOSE_TOP[0],CLOSE_TOP[1],CLOSE_TOP[2],CLOSE_TOP[3],20,'#b8b0c8');text('おわる',CLOSE_TOP[0]+49,CLOSE_TOP[1]+20,16,'#ffffff');
+ ent(drawRun,50,138,1.7,{mood:'happy',t});font(14);wrap('こたえを かくして、 ともだちに よんで あげてね！',240).forEach((l,i)=>text(l,96,92+i*22,14,'#8a7a9a','left'));
+ text((TM.i+1)+' / '+TOMO.length,340,138,13,'#b8a8c8','right');
+ rrf(20,152,320,264,20,'#ffffff');g.strokeStyle='#ffc8a0';g.lineWidth=3;rrp(20,152,320,264,20);g.stroke();
+ font(22);const ql=wrap(n[0],284);const qy=TM.ans||TM.hint?178:232-(ql.length-1)*15;ql.forEach((l,i)=>text(l,38,qy+i*32,22,'#4a3a5a','left'));
+ let y=qy+ql.length*32+14;
+ if(TM.hint){font(15);wrap('ヒント： '+n[2],284).forEach(l=>{text(l,38,y,15,'#5aa8e8','left');y+=22});y+=6}
+ if(TM.ans){rrf(36,y-4,288,Math.max(44,404-y),14,'#fff0f6');font(24);const al=wrap(n[1],260);al.forEach((l,i)=>text(l,180,y+20+i*30,24,'#ff4f8f'));star(52,y+18,8,'#ffd84a',t/400);star(308,y+18,8,'#ffd84a',-t/400)}
+ rrf(TM_HINT[0],TM_HINT[1],TM_HINT[2],TM_HINT[3],18,TM.hint?'#d8e6f4':'#5aa8e8');text('ヒント',TM_HINT[0]+TM_HINT[2]/2,TM_HINT[1]+26,19,'#ffffff');
+ rrf(TM_ANS[0],TM_ANS[1],TM_ANS[2],TM_ANS[3],18,TM.ans?'#f4d8e4':'#ff7aa8');text('こたえ',TM_ANS[0]+TM_ANS[2]/2,TM_ANS[1]+26,19,'#ffffff');
+ rrf(TM_NEXT[0],TM_NEXT[1],TM_NEXT[2],TM_NEXT[3],20,'#ffa83a');text('つぎの なぞなぞ ▶',180,TM_NEXT[1]+28,20,'#ffffff');
+ rrf(TM_PREV[0],TM_PREV[1],TM_PREV[2],TM_PREV[3],18,'#c8c0d8');text('◀ まえ',TM_PREV[0]+TM_PREV[2]/2,TM_PREV[1]+24,16,'#ffffff');
+ rrf(TM_RND[0],TM_RND[1],TM_RND[2],TM_RND[3],18,'#7acb6a');text('どれか ひとつ',TM_RND[0]+TM_RND[2]/2,TM_RND[1]+24,16,'#ffffff')}
 let Q=null;
 function genQ(){return Q.lv>1?QHARD[Q.id](Q.lv):QGEN[Q.id]()}
 function newQ(){const c=genQ();let last=Q.cur&&Q.cur.q;let k=0;let cc=c;while(last&&cc.q===last&&k<5){cc=genQ();k++}cc.right=cc.ans[0];cc.opts=shuffle(cc.ans);Q.cur=cc;Q.res=null;Q.lock=false;Q.got=null;Q.wrong=[]}
@@ -1726,6 +1757,7 @@ function drawEnd(t){const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'
  text('タップで もどる',180,600,14,'#a090b8')}
 function drawMenu(t){
  if(menuMode==='quiz'){drawQuiz(t);return}
+ if(menuMode==='tomo'){drawTomo(t);return}
  g.fillStyle='#fff4fa';g.fillRect(0,0,W,H);
  const title={shop:'うさぎの ルルの おみせ',bag:'もちもの',zukan:'ともだち ずかん',seal:'シールちょう',arena:'れんしゅうじょう'}[menuMode];
  text(title,18,34,19,'#ff4f97','left');
